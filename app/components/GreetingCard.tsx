@@ -582,13 +582,13 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                   <div className="flex items-center gap-2 pl-1">
                     <div className="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent" />
                   </div>
-                  <div className="relative">
+                  <div className="relative mx-2">
                     <div
-                      className="w-full h-32 flex items-center justify-center bg-white/90 backdrop-blur-sm border-2 border-blue-100 rounded-xl p-4 text-gray-700 text-center shadow-sm relative z-10"
+                      className="w-full h-32 max-h-48 overflow-y-auto bg-white/90 backdrop-blur-sm border-2 border-blue-100 rounded-xl text-gray-700 shadow-sm relative z-10"
                       style={{
-                        fontFamily: 'cursive, sans-serif',
                         lineHeight: '1.6',
-                        whiteSpace: 'pre-wrap', // giữ xuống dòng
+                        whiteSpace: 'pre-wrap',
+                        padding: '5px 8px',
                       }}
                     >
                       {message || 'Your message will appear here'}
@@ -608,21 +608,21 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                 <div className="flex justify-center pt-2">
                   <motion.button
                     onClick={handleAudioToggle}
-                    className="relative w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 flex items-center justify-center shadow-xl cursor-pointer overflow-hidden"
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 flex items-center justify-center shadow-xl cursor-pointer overflow-hidden"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     animate={{
                       boxShadow: isAudioPlaying
                         ? [
-                            '0 0 20px rgba(236, 72, 153, 0.6)',
-                            '0 0 40px rgba(236, 72, 153, 0.8)',
-                            '0 0 20px rgba(236, 72, 153, 0.6)',
+                            '0 0 16px rgba(236, 72, 153, 0.6)',
+                            '0 0 32px rgba(236, 72, 153, 0.8)',
+                            '0 0 16px rgba(236, 72, 153, 0.6)',
                           ]
-                        : '0 10px 30px rgba(0, 0, 0, 0.2)',
+                        : '0 8px 24px rgba(0, 0, 0, 0.18)',
                     }}
                     transition={{
                       boxShadow: {
-                        duration: 1.5,
+                        duration: 1.2,
                         repeat: isAudioPlaying ? Infinity : 0,
                         ease: 'easeInOut',
                       },
@@ -632,24 +632,24 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                     {isAudioPlaying && (
                       <>
                         <motion.div
-                          className="absolute inset-0 rounded-full border-4 border-pink-400"
+                          className="absolute inset-0 rounded-full border-3 border-pink-400"
                           initial={{ scale: 1, opacity: 0.8 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
+                          animate={{ scale: 1.4, opacity: 0 }}
                           transition={{
-                            duration: 1.5,
+                            duration: 1.4,
                             repeat: Infinity,
                             ease: 'easeOut',
                           }}
                         />
                         <motion.div
-                          className="absolute inset-0 rounded-full border-4 border-purple-400"
+                          className="absolute inset-0 rounded-full border-3 border-purple-400"
                           initial={{ scale: 1, opacity: 0.8 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
+                          animate={{ scale: 1.4, opacity: 0 }}
                           transition={{
-                            duration: 1.5,
+                            duration: 1.4,
                             repeat: Infinity,
                             ease: 'easeOut',
-                            delay: 0.5,
+                            delay: 0.45,
                           }}
                         />
                       </>
@@ -659,15 +659,15 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                     <motion.div
                       animate={{ rotate: isAudioPlaying ? [0, 5, -5, 0] : 0 }}
                       transition={{
-                        duration: 0.5,
+                        duration: 0.45,
                         repeat: isAudioPlaying ? Infinity : 0,
                         ease: 'easeInOut',
                       }}
                     >
                       {isAudioPlaying ? (
-                        <Volume2 className="w-8 h-8 text-white relative z-10" />
+                        <Volume2 className="w-5 h-5 text-white relative z-10" />
                       ) : (
-                        <VolumeX className="w-8 h-8 text-white relative z-10" />
+                        <VolumeX className="w-5 h-5 text-white relative z-10" />
                       )}
                     </motion.div>
 
