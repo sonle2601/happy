@@ -29,8 +29,90 @@ export default function App() {
     };
 
     try {
+      // Upload media to Cloudinary first to avoid large JSON payloads.
+      // This uses an unsigned upload preset which must be set in the Cloudinary
+      // dashboard and exposed via NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.
+      const cloudName = 'dtxkcvzg4';
+      const uploadPreset = 'n1bn55kx';
+
+      async function dataURLToBlob(dataurl: string) {
+        const arr = dataurl.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], { type: mime });
+      }
+
+      async function uploadFileToCloudinary(
+        file: File | Blob,
+        folder: string,
+        resourceType: 'image' | 'video'
+      ) {
+        if (!uploadPreset) {
+          // No preset configured: signal caller to fallback to old behavior
+          throw new Error('MISSING_CLOUDINARY_UPLOAD_PRESET');
+        }
+
+        const url = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+        const form = new FormData();
+        // If caller passed a Blob, wrap into a File to give it a name
+        const fileToUpload =
+          file instanceof File
+            ? file
+            : new File([file], 'upload', { type: (file as Blob).type });
+        form.append('file', fileToUpload as File);
+        form.append('upload_preset', uploadPreset);
+        form.append('folder', folder);
+
+        const r = await fetch(url, { method: 'POST', body: form });
+        if (!r.ok) {
+          const txt = await r.text();
+          throw new Error(`Cloudinary upload failed: ${r.status} ${txt}`);
+        }
+        const json = await r.json();
+        return json.secure_url as string;
+      }
+
+      // Try to upload image and audio to Cloudinary. If upload preset is not configured
+      // or upload fails, fall back to the original behavior (sending base64) so the app
+      // remains functional.
+      let imageUrl: string | undefined = undefined;
+      let audioUrl: string | undefined = undefined;
+
+      try {
+        if (imageFile) {
+          imageUrl = await uploadFileToCloudinary(
+            imageFile,
+            'cards/images',
+            'image'
+          );
+        }
+
+        if (audioData) {
+          // audioData is stored as a data URL in state; convert to Blob then upload
+          const blob = await dataURLToBlob(audioData);
+          audioUrl = await uploadFileToCloudinary(blob, 'cards/audio', 'video');
+        }
+      } catch (uploadErr) {
+        if (
+          (uploadErr as Error).message === 'MISSING_CLOUDINARY_UPLOAD_PRESET'
+        ) {
+          // No preset configured; fall back to previous flow (send base64 to API)
+          console.warn(
+            'NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET not set; falling back to sending base64'
+          );
+        } else {
+          console.error('Cloudinary upload error', uploadErr);
+          // If upload fails for other reason, continue and let server try to accept base64
+        }
+      }
+
+      // If we have no imageUrl but we do have an imageFile, convert to base64 as before
       let imageDataUrl: string | undefined = undefined;
-      if (imageFile) {
+      if (!imageUrl && imageFile) {
         imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -39,12 +121,16 @@ export default function App() {
         });
       }
 
+      // If we have no audioUrl but audioData exists, keep audioData (it's already a data URL)
+
       const res = await fetch('/api/saveCard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageData: imageDataUrl,
-          audioData: audioData || undefined,
+          imageUrl: imageUrl ?? undefined,
+          imageData: imageDataUrl ?? undefined,
+          audioUrl: audioUrl ?? undefined,
+          audioData: !audioUrl && audioData ? audioData : undefined,
           message: message || undefined,
           name: name || undefined,
         }),
