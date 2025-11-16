@@ -535,7 +535,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
 
                   {card?.image ? (
                     <img
-                      src={`/uploads/${card.image}`}
+                      src={card.image}
                       alt={card?.name ?? 'photo'}
                       className="w-full h-full object-cover absolute inset-0"
                     />
@@ -678,11 +678,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
 
                 {/* Hidden audio element (plays when user toggles) */}
                 {card?.audio && (
-                  <audio
-                    ref={audioRef}
-                    src={`/uploads/${card.audio}`}
-                    preload="auto"
-                  />
+                  <audio ref={audioRef} src={card.audio} preload="auto" />
                 )}
               </motion.div>
 

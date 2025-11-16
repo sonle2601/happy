@@ -1,6 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
 import ClientGreetingWrapper from '../components/ClientGreetingWrapper';
+import { PrismaClient } from '@/app/generated/prisma/client';
 
 type CardEntry = {
   id: string;
@@ -12,14 +11,22 @@ type CardEntry = {
 };
 
 async function readCards(): Promise<CardEntry[]> {
+  const prisma = new PrismaClient();
   try {
-    const dataPath = path.join(process.cwd(), 'data', 'cards.json');
-    const content = await fs.readFile(dataPath, 'utf8');
-    const parsed = JSON.parse(content || '[]');
-    if (Array.isArray(parsed)) return parsed as CardEntry[];
+    const users = await prisma.user.findMany();
+    return users.map((u) => ({
+      id: String(u.id),
+      name: u.name ?? null,
+      message: u.messages ?? null,
+      image: u.image ?? null,
+      audio: u.audio ?? null,
+      timestamp: u.createdAt ? u.createdAt.toISOString() : undefined,
+    }));
+  } catch (e) {
+    console.error('readCards db error', e);
     return [];
-  } catch {
-    return [];
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
