@@ -215,11 +215,6 @@ export default function App() {
         .replace(/-+/g, '-')
     );
   }
-  const hasContent =
-    Boolean(imageFile) ||
-    Boolean(audioData) ||
-    Boolean(message) ||
-    Boolean(name);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-pink-50 via-purple-50 to-blue-50">
@@ -280,8 +275,13 @@ export default function App() {
         >
           <Button
             onClick={handleCreateCard}
-            // require a name to be present before enabling create
-            disabled={!hasContent || name.trim().length === 0 || isSubmitting}
+            disabled={
+              !name.trim() ||
+              !imageFile ||
+              !audioData ||
+              !message ||
+              isSubmitting
+            }
             className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
             <Sparkles className="w-5 h-5 mr-2" />
