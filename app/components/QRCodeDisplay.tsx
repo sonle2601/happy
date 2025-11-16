@@ -58,7 +58,7 @@ export function QRCodeDisplay({ qrData }: QRCodeDisplayProps) {
           Scan this QR code to access your greeting card
         </p>
 
-        <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-6 inline-block">
+        <div className="from-green-50 to-blue-50 rounded-2xl p-6 inline-block">
           <motion.div
             initial={{ rotate: -5 }}
             animate={{ rotate: 0 }}
@@ -85,16 +85,17 @@ export function QRCodeDisplay({ qrData }: QRCodeDisplayProps) {
             Download
           </Button>
 
-          {navigator.share && (
-            <Button
-              onClick={shareQRCode}
-              variant="outline"
-              className="rounded-xl border-2 border-blue-300 hover:bg-blue-50 text-blue-700"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-          )}
+          {typeof navigator !== 'undefined' &&
+            typeof navigator.share === 'function' && (
+              <Button
+                onClick={shareQRCode}
+                variant="outline"
+                className="rounded-xl border-2 border-blue-300 hover:bg-blue-50 text-blue-700"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+            )}
         </div>
 
         <p className="text-slate-500 text-sm mt-6">

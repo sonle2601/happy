@@ -98,7 +98,6 @@ export default function App() {
     }
   };
 
-  // Slugify a name: remove diacritics, non-alphanum, replace spaces with hyphens
   function slugify(input: string) {
     return (
       input
@@ -175,7 +174,7 @@ export default function App() {
           <Button
             onClick={handleCreateCard}
             disabled={!hasContent}
-            className="w-full h-14 bg-linear-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+            className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
             <Sparkles className="w-5 h-5 mr-2" />
             Create Greeting Card
