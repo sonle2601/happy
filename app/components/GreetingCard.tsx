@@ -153,7 +153,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
             transition={{ delay: 0.5 }}
             className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-center text-white/80 whitespace-nowrap"
           >
-            Tap to open
+            Click to see the wishes
           </motion.div>
         </motion.div>
       )}
@@ -286,7 +286,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                   </motion.div>
                 </div>
                 <h1 className="text-blue-600 mb-2 relative">
-                  Happy Man Day
+                  Happy International Men’s Day from Cluster Validation Team!
                   <div className="absolute -bottom-1 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-60" />
                 </h1>
                 <div className="text-blue-500 relative">
@@ -312,7 +312,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                 >
                   👆
                 </motion.span>
-                Tap to read more
+                Click to see the wishes
               </motion.div>
             </div>
           </motion.div>
@@ -490,7 +490,7 @@ export function GreetingCard({ state, onTap, card }: GreetingCardProps) {
                   </motion.div>
                 </div>
                 <h1 className="text-blue-600 mb-2 relative inline-block">
-                  Happy Man Day
+                  Happy International Men’s Day from Cluster Validation Team!
                   <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
                 </h1>
                 <div className="text-blue-500 mb-4 relative">

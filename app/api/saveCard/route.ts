@@ -19,6 +19,17 @@ type CardBody = {
   name?: string;
 };
 
+function slugify(input: string) {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 async function uploadBase64ToCloudinary(
   base64Data: string,
   folder: string,
@@ -37,6 +48,27 @@ export async function POST(request: Request) {
   const prisma = new PrismaClient();
   try {
     const body = (await request.json()) as CardBody;
+
+    // Normalize and trim name; if provided, validate uniqueness before
+    // performing any potentially expensive uploads.
+    const rawName = body.name ?? null;
+    const name = rawName && rawName.trim().length > 0 ? rawName.trim() : null;
+
+    // Convert provided name into a slug to store in the DB (e.g. "Sơn Lê" -> "son-le").
+    const slugName = name ? slugify(name) : null;
+
+    if (slugName) {
+      const existing = await prisma.user.findFirst({
+        where: { name: { equals: slugName, mode: 'insensitive' } },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { ok: false, error: 'Name already in use' },
+          { status: 409 }
+        );
+      }
+    }
 
     let imageUrl: string | null = null;
     let audioUrl: string | null = null;
@@ -82,14 +114,13 @@ export async function POST(request: Request) {
 
     const created = await prisma.user.create({
       data: {
-        name: body.name ?? null,
+        name: slugName ?? null,
         image: imageUrl ?? null,
         audio: audioUrl ?? null,
         messages: body.message ?? null,
       },
     });
 
-    console.log('Created entry:', created);
     return NextResponse.json({ ok: true, entry: created });
   } catch (err: unknown) {
     console.error('saveCard error', err);

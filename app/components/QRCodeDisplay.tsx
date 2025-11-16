@@ -40,7 +40,7 @@ export function QRCodeDisplay({ qrData }: QRCodeDisplayProps) {
           text: 'Scan this QR code to view my greeting card!',
         });
       } catch (err) {
-        console.log('Error sharing:', err);
+        console.error('Error sharing:', err);
       }
     }
   };

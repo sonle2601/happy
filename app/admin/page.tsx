@@ -18,9 +18,9 @@ export default function App() {
   const [message, setMessage] = useState('');
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const [showQR, setShowQR] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateCard = async () => {
-    // Create greeting card configuration
     const cardConfig = {
       image: imageFile ? 'image-included' : 'no-image',
       audio: audioData ? 'audio-included' : 'no-audio',
@@ -28,10 +28,17 @@ export default function App() {
       timestamp: new Date().toISOString(),
     };
 
+    // Prevent double submit and require name before attempting to create/save a card
+    if (isSubmitting) return;
+    if (!name || name.trim().length === 0) {
+      toast.error('Please enter a name');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const loadingToastId = toast.loading('Saving...');
+
     try {
-      // Upload media to Cloudinary first to avoid large JSON payloads.
-      // This uses an unsigned upload preset which must be set in the Cloudinary
-      // dashboard and exposed via NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.
       const cloudName = 'dtxkcvzg4';
       const uploadPreset = 'n1bn55kx';
 
@@ -106,11 +113,9 @@ export default function App() {
           );
         } else {
           console.error('Cloudinary upload error', uploadErr);
-          // If upload fails for other reason, continue and let server try to accept base64
         }
       }
 
-      // If we have no imageUrl but we do have an imageFile, convert to base64 as before
       let imageDataUrl: string | undefined = undefined;
       if (!imageUrl && imageFile) {
         imageDataUrl = await new Promise<string>((resolve, reject) => {
@@ -120,8 +125,6 @@ export default function App() {
           reader.readAsDataURL(imageFile);
         });
       }
-
-      // If we have no audioUrl but audioData exists, keep audioData (it's already a data URL)
 
       const res = await fetch('/api/saveCard', {
         method: 'POST',
@@ -136,6 +139,14 @@ export default function App() {
         }),
       });
       const data = await res.json();
+      // If the server rejects due to duplicate name, surface a clear message
+      if (res.status === 409) {
+        toast.error(data?.error ?? 'Name already in use', {
+          id: loadingToastId,
+        });
+        setIsSubmitting(false);
+        return;
+      }
       if (data?.ok) {
         if (name) {
           const slug = slugify(name);
@@ -143,7 +154,6 @@ export default function App() {
           setQrCodeData(url);
           setShowQR(true);
         } else {
-          // include server id in qr payload when no name
           const qrData = JSON.stringify({ id: data.entry.id, ...cardConfig });
           setQrCodeData(qrData);
           setShowQR(true);
@@ -152,7 +162,8 @@ export default function App() {
         setImageFile(null);
         setAudioData('');
         setMessage('');
-        toast.success('Card saved');
+        toast.success('Card saved', { id: loadingToastId });
+        setIsSubmitting(false);
       } else {
         // fallback to local QR data if server failed
         if (name) {
@@ -166,7 +177,11 @@ export default function App() {
           setShowQR(true);
         }
         console.error('Failed to save card', data);
-        toast.error('Failed to save card');
+        // Show server-provided message if available
+        toast.error(data?.error ?? 'Failed to save card', {
+          id: loadingToastId,
+        });
+        setIsSubmitting(false);
       }
     } catch (err) {
       if (name) {
@@ -180,7 +195,10 @@ export default function App() {
         setShowQR(true);
       }
       console.error('save error', err);
-      toast.error('Save error');
+      toast.error('Save error', {
+        id: typeof loadingToastId !== 'undefined' ? loadingToastId : undefined,
+      });
+      setIsSubmitting(false);
     }
   };
 
@@ -205,6 +223,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* App-level Toaster is rendered in app/layout via the UI wrapper; do not render another here */}
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
         <motion.div
@@ -237,6 +256,8 @@ export default function App() {
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter a name to use in the card URL"
               className="mb-4"
+              required
+              aria-required
             />
           </div>
 
@@ -259,7 +280,8 @@ export default function App() {
         >
           <Button
             onClick={handleCreateCard}
-            disabled={!hasContent}
+            // require a name to be present before enabling create
+            disabled={!hasContent || name.trim().length === 0 || isSubmitting}
             className="w-full h-14 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
             <Sparkles className="w-5 h-5 mr-2" />
