@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import { PrismaClient } from '@/app/generated/prisma/client';
+
+cloudinary.config({
+  cloud_name: 'dtxkcvzg4',
+  api_key: '925467188465943',
+  api_secret: 'I3kRnKEiuwLH4WJXoZ2hm2hySwo',
+});
 
 type CardBody = {
   imageData?: string;
@@ -9,106 +15,76 @@ type CardBody = {
   name?: string;
 };
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'cards.json');
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+async function uploadBase64ToCloudinary(
+  base64Data: string,
+  folder: string,
+  resourceType: 'image' | 'video'
+) {
+  // Upload base64 trực tiếp lên Cloudinary
+  const result = await cloudinary.uploader.upload(base64Data, {
+    folder,
+    resource_type: resourceType,
+  });
 
-function parseDataUrl(dataUrl: string) {
-  // data:[<mediatype>][;base64],<data>
-  const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-  if (!matches) return null;
-  return { mime: matches[1], base64: matches[2] };
-}
-
-async function ensureUploadDir() {
-  try {
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  } catch {
-    // ignore
-  }
-}
-
-function extensionFromMime(mime: string) {
-  const map: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'audio/mpeg': 'mp3',
-    'audio/wav': 'wav',
-    'audio/x-wav': 'wav',
-    'audio/ogg': 'ogg',
-    'audio/webm': 'webm',
-  };
-  return map[mime] || mime.split('/').pop() || 'bin';
-}
-
-async function saveBase64ToFile(base64: string, ext: string) {
-  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
-  const filePath = path.join(UPLOAD_DIR, name);
-  const buffer = Buffer.from(base64, 'base64');
-  await fs.writeFile(filePath, buffer);
-  return name;
+  return result.secure_url;
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CardBody;
 
-    await ensureUploadDir();
+    const prisma = new PrismaClient();
 
-    let imageFile: string | null = null;
-    let audioFile: string | null = null;
+    let imageUrl: string | null = null;
+    let audioUrl: string | null = null;
 
     if (body.imageData) {
-      const parsed = parseDataUrl(body.imageData);
-      if (parsed) {
-        const ext = extensionFromMime(parsed.mime);
-        imageFile = await saveBase64ToFile(parsed.base64, ext);
+      // Kiểm tra nếu là data URL, giữ nguyên logic parseDataUrl
+      let base64String = body.imageData;
+      const matches = body.imageData.match(/^data:(.+);base64,(.+)$/);
+      if (matches) {
+        base64String = `data:${matches[1]};base64,${matches[2]}`;
       } else {
-        // If not a data URL, assume it's plain base64 with jpeg
-        const ext = 'jpg';
-        imageFile = await saveBase64ToFile(body.imageData, ext);
+        base64String = `data:image/jpeg;base64,${body.imageData}`;
       }
+
+      imageUrl = await uploadBase64ToCloudinary(
+        base64String,
+        'cards/images',
+        'image'
+      );
     }
 
     if (body.audioData) {
-      const parsed = parseDataUrl(body.audioData);
-      if (parsed) {
-        const ext = extensionFromMime(parsed.mime);
-        audioFile = await saveBase64ToFile(parsed.base64, ext);
+      let base64String = body.audioData;
+      const matches = body.audioData.match(/^data:(.+);base64,(.+)$/);
+      if (matches) {
+        base64String = `data:${matches[1]};base64,${matches[2]}`;
       } else {
-        // assume mp3
-        audioFile = await saveBase64ToFile(body.audioData, 'mp3');
+        // Nếu không phải data URL, giả sử là base64 thuần, thêm tiền tố
+        base64String = `data:audio/mpeg;base64,${body.audioData}`;
       }
+
+      // Quan trọng: Dùng 'video' cho audio
+      audioUrl = await uploadBase64ToCloudinary(
+        base64String,
+        'cards/audio',
+        'video'
+      );
     }
 
-    // Read existing data file
-    let existing: Array<Record<string, unknown>> = [];
-    try {
-      const content = await fs.readFile(DATA_FILE, 'utf8');
-      const parsed = JSON.parse(content || '[]');
-      if (Array.isArray(parsed)) {
-        existing = parsed as Array<Record<string, unknown>>;
-      } else {
-        existing = [];
-      }
-    } catch {
-      existing = [];
-    }
+    const created = await prisma.user.create({
+      data: {
+        name: body.name ?? null,
+        image: imageUrl ?? null, // Lưu URL Cloudinary
+        audio: audioUrl ?? null, // Lưu URL Cloudinary
+        messages: body.message ?? null,
+      },
+    });
 
-    const newEntry = {
-      id: Date.now().toString(),
-      image: imageFile,
-      audio: audioFile,
-      message: body.message ?? null,
-      name: body.name ?? null,
-      timestamp: new Date().toISOString(),
-    };
+    console.log('Created entry:', created);
 
-    existing.push(newEntry);
-
-    await fs.writeFile(DATA_FILE, JSON.stringify(existing, null, 2), 'utf8');
-
-    return NextResponse.json({ ok: true, entry: newEntry });
+    return NextResponse.json({ ok: true, entry: created });
   } catch (err: unknown) {
     console.error('saveCard error', err);
     return NextResponse.json(
