@@ -5,9 +5,17 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../app/generated/prisma"
- binaryTargets = ["native", "rhel-openssl-3.0.x"] 
+  // Ensure the Prisma query engine for your deployment runtime is generated.
+  // Add the runtime(s) your host uses (the error reported `rhel-openssl-3.0.x`).
+  // Keep "native" for local development.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // Use the binary engine by default (the engine files will be copied to the
+  // generator output). If you'd prefer the Node-API shared library approach,
+  // you can set `engineType = "library"` instead and include the matching
+  // library targets.
+  engineType = "binary"
 }
 
 datasource db {
