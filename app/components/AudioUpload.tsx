@@ -87,7 +87,7 @@ export function AudioUpload({ audioData, setAudioData }: AudioUploadProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-5"
+          className="from-pink-100 to-purple-100 rounded-2xl p-5"
         >
           <audio ref={audioRef} src={audioData} />
           <div className="flex items-center gap-4">
