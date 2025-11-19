@@ -54,7 +54,6 @@ export async function POST(request: Request) {
     const rawName = body.name ?? null;
     const name = rawName && rawName.trim().length > 0 ? rawName.trim() : null;
 
-    // Convert provided name into a slug to store in the DB (e.g. "Sơn Lê" -> "son-le").
     const slugName = name ? slugify(name) : null;
 
     if (slugName) {
